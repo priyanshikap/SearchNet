@@ -1,0 +1,6 @@
+# Backend dependencies
+
+Flask
+Flask-Cors
+numpy
+pytest
