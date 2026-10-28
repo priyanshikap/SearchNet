@@ -29,7 +29,7 @@ const METRICS = [
     lowerIsBetter: false,
   },
   {
-    label: "Availability",
+    label: "Request success rate (modeled availability)",
     key: "availability",
     unit: "%",
     lowerIsBetter: false,
@@ -152,7 +152,7 @@ export default function PerformanceResults() {
       const common = {
         region,
         traffic_intensity: traffic,
-        requests_count: requestCount,
+        requests: requestCount,
         seed: randomSeed,
         failure,
         failover_enabled: failoverEnabled,

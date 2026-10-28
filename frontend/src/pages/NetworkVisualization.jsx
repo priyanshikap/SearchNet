@@ -66,10 +66,11 @@ export default function NetworkVisualization() {
       </section>
 
       <Topology
-        architecture={architecture}
-        region={region}
-        failure={failure}
-      />
+  architecture={architecture}
+  region={region}
+  failure={failure}
+  failoverEnabled={failoverEnabled}
+/>
 
       <p className="disclaimer">
         This is a frontend visualization of the modeled architecture.
