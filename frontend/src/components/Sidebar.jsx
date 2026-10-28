@@ -6,6 +6,7 @@ import {
   Network,
   ChartNoAxesCombined,
   BookOpen,
+  FileBarChart,
 } from "lucide-react";
 
 
@@ -17,6 +18,7 @@ const menuItems = [
   { name: "Performance Results", icon: ChartNoAxesCombined },
   { name: "Saved Experiment Results", icon: ChartNoAxesCombined },
   { name: "Methodology", icon: BookOpen },
+  { name: "Documentation", icon: FileBarChart },{ name: "Cisco Packet Tracer Results", icon: FileBarChart },
 ];
 
 

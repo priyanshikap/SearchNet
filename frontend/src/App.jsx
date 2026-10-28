@@ -4,7 +4,7 @@ import { CircleHelp } from "lucide-react";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-
+import PacketTracerResults from "./pages/PacketTracerResults";
 import Dashboard from "./pages/Dashboard";
 import SearchPlayground from "./pages/SearchPlayground";
 import Simulator from "./pages/Simulator";
@@ -48,7 +48,8 @@ export default function App() {
 
       case "Saved Experiment Results":
         return <Results />;
-
+      case "Cisco Packet Tracer Results":
+        return <PacketTracerResults />;
       case "Methodology":
         return <Methodology />;
 

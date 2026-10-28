@@ -50,6 +50,139 @@ def load_experiment(experiment_id):
         return None
 
 
+PACKET_TRACER_RESULTS_FILE = BASE_DIR.parent / "packet_tracer_results.json"
+
+PACKET_TRACER_DEFAULTS = [
+    {
+        "name": "Normal connectivity",
+        "centralized": "Ping connectivity tested successfully",
+        "distributed": "Ping connectivity tested successfully",
+    },
+    {
+        "name": "Link failure",
+        "centralized": "",
+        "distributed": "",
+    },
+    {
+        "name": "Server failure",
+        "centralized": "",
+        "distributed": "",
+    },
+    {
+        "name": "Regional failure",
+        "centralized": "",
+        "distributed": "",
+    },
+]
+
+
+def load_packet_tracer_results():
+    """Load saved Packet Tracer observations or return the defaults."""
+    if not PACKET_TRACER_RESULTS_FILE.is_file():
+        return PACKET_TRACER_DEFAULTS
+
+    try:
+        with PACKET_TRACER_RESULTS_FILE.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+
+        observations = data.get("observations")
+
+        if isinstance(observations, list):
+            return observations
+
+    except (OSError, json.JSONDecodeError, AttributeError):
+        app.logger.exception("Unable to load Packet Tracer observations")
+
+    return PACKET_TRACER_DEFAULTS
+
+
+@app.get("/api/packet-tracer-results")
+def get_packet_tracer_results():
+    """Return recorded Cisco Packet Tracer observations."""
+    return jsonify({
+        "observations": load_packet_tracer_results()
+    })
+
+
+@app.put("/api/packet-tracer-results")
+def save_packet_tracer_results():
+    """Save observations recorded by the user."""
+    payload = request.get_json(silent=True)
+
+    if not isinstance(payload, dict):
+        return jsonify({
+            "error": "Request body must be a JSON object."
+        }), 400
+
+    observations = payload.get("observations")
+
+    if not isinstance(observations, list):
+        return jsonify({
+            "error": "observations must be a list."
+        }), 400
+
+    expected_names = [
+        "Normal connectivity",
+        "Link failure",
+        "Server failure",
+        "Regional failure",
+    ]
+
+    if len(observations) != len(expected_names):
+        return jsonify({
+            "error": "Exactly four test scenarios are required."
+        }), 400
+
+    cleaned_observations = []
+
+    for index, item in enumerate(observations):
+        if not isinstance(item, dict):
+            return jsonify({
+                "error": "Each observation must be a JSON object."
+            }), 400
+
+        if item.get("name") != expected_names[index]:
+            return jsonify({
+                "error": "Test scenarios are missing or in the wrong order."
+            }), 400
+
+        centralized = item.get("centralized")
+        distributed = item.get("distributed")
+
+        if not isinstance(centralized, str) or not isinstance(distributed, str):
+            return jsonify({
+                "error": "Observations must be text."
+            }), 400
+
+        if len(centralized) > 2000 or len(distributed) > 2000:
+            return jsonify({
+                "error": "Each observation must be 2000 characters or fewer."
+            }), 400
+
+        cleaned_observations.append({
+            "name": expected_names[index],
+            "centralized": centralized,
+            "distributed": distributed,
+        })
+
+    try:
+        with PACKET_TRACER_RESULTS_FILE.open("w", encoding="utf-8") as file:
+            json.dump(
+                {"observations": cleaned_observations},
+                file,
+                indent=2,
+            )
+    except OSError:
+        app.logger.exception("Unable to save Packet Tracer observations")
+        return jsonify({
+            "error": "Unable to save Packet Tracer results."
+        }), 500
+
+    return jsonify({
+        "message": "Packet Tracer results saved successfully.",
+        "observations": cleaned_observations,
+    }), 200
+
 @app.get("/api/health")
 def health():
     return jsonify({
