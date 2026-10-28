@@ -1,5 +1,5 @@
 
-from backend.simulator import run_simulation
+from simulator import run_simulation
 
 
 def test_normal_operation():

@@ -1,40 +1,52 @@
 
-export default function Topology({ architecture, region, failure }) {
+export default function Topology({
+  architecture,
+  region,
+  failure,
+  failoverEnabled = false,
+}) {
   const regions = [
     { id: "india", name: "India" },
     { id: "europe", name: "Europe" },
     { id: "usa", name: "USA" },
   ];
 
-  const centralRegion = "europe";
+  const distances = {
+    india: { india: 20, europe: 110, usa: 210 },
+    europe: { india: 110, europe: 20, usa: 130 },
+    usa: { india: 210, europe: 130, usa: 20 },
+  };
+
+  // Centralized hosting always uses the Europe primary server.
+  // In distributed mode, the selected user's regional server fails.
   const failedRegion =
-    failure === "Regional Server Failure" ? centralRegion : null;
+    failure !== "Regional Server Failure"
+      ? null
+      : architecture === "Centralized"
+        ? "europe"
+        : region;
 
   const selectedRegionFailed =
     architecture === "Distributed" && region === failedRegion;
 
+  // Show a backup only when distributed failover is enabled.
   const backupRegion =
+    architecture === "Distributed" &&
     failure === "Regional Server Failure" &&
-    architecture === "Distributed"
+    failoverEnabled
       ? regions
           .filter((item) => item.id !== failedRegion)
-          .sort((a, b) => {
-            const distances = {
-              india: { india: 20, europe: 110, usa: 210 },
-              europe: { india: 110, europe: 20, usa: 130 },
-              usa: { india: 210, europe: 130, usa: 20 },
-            };
-
-            return (
-              distances[region][a.id] - distances[region][b.id]
-            );
-          })[0]?.id
+          .sort(
+            (a, b) =>
+              distances[failedRegion][a.id] -
+              distances[failedRegion][b.id]
+          )[0]?.id
       : null;
 
   function getRegionStatus(item) {
     if (item.id === failedRegion) return "failed";
-    if (item.id === region) return "selected";
     if (item.id === backupRegion) return "backup";
+    if (item.id === region) return "selected";
     return "available";
   }
 
@@ -65,7 +77,9 @@ export default function Topology({ architecture, region, failure }) {
         <div className="topology-node">
           <span className="node-icon">⌕</span>
           <strong>Search Client</strong>
-          <small>{regions.find((item) => item.id === region)?.name} user</small>
+          <small>
+            {regions.find((item) => item.id === region)?.name} user
+          </small>
         </div>
 
         <div
@@ -86,13 +100,15 @@ export default function Topology({ architecture, region, failure }) {
         {architecture === "Centralized" ? (
           <div
             className={`topology-node server-node ${
-              failure === "Regional Server Failure" ? "failed-node" : ""
+              failedRegion === "europe" ? "failed-node" : ""
             }`}
           >
-            <span className="node-icon">▣</span>
+            <span className="node-icon">
+              {failedRegion === "europe" ? "✕" : "▣"}
+            </span>
             <strong>Central Server</strong>
             <small>
-              {failure === "Regional Server Failure"
+              {failedRegion === "europe"
                 ? "Europe · Unavailable"
                 : "Europe · Primary"}
             </small>
@@ -141,25 +157,25 @@ export default function Topology({ architecture, region, failure }) {
         <div className="topology-message">
           {architecture === "Centralized" ? (
             <p>
-              <strong>Primary server unavailable.</strong> The centralized
-              architecture has no alternate server in this model, so requests
-              cannot be served.
+              <strong>Primary server unavailable.</strong>{" "}
+              The centralized architecture has no alternate server in this
+              model, so requests cannot be served.
             </p>
           ) : (
             <p>
-              <strong>Regional failure scenario.</strong> Europe is marked
-              unavailable.{" "}
+              <strong>Regional failure scenario.</strong>{" "}
+              {regions.find((item) => item.id === failedRegion)?.name} is
+              marked unavailable.{" "}
               {backupRegion ? (
                 <>
-                  The conceptual backup region for the selected user is{" "}
+                  The nearest conceptual backup to the failed region is{" "}
                   <strong>
                     {regions.find((item) => item.id === backupRegion)?.name}
                   </strong>
-                  . Actual request recovery depends on the simulator's
-                  failover setting.
+                  . The simulator determines actual modeled request outcomes.
                 </>
               ) : (
-                "No backup region is available."
+                "Failover is disabled, so no active backup is displayed."
               )}
             </p>
           )}
@@ -169,10 +185,10 @@ export default function Topology({ architecture, region, failure }) {
       {failure === "Network Link Failure" && (
         <div className="topology-message">
           <p>
-            <strong>Simulated network link failure.</strong> The broken link is
-            a conceptual indicator; the Python model applies probabilistic
-            route outages and packet loss rather than identifying a physical
-            link.
+            <strong>Simulated network link failure.</strong>{" "}
+            The broken link is a conceptual indicator. The Python model
+            applies probabilistic packet loss rather than identifying a
+            specific physical link.
           </p>
         </div>
       )}

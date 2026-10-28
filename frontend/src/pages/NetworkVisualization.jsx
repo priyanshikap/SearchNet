@@ -69,7 +69,7 @@ export default function NetworkVisualization() {
   architecture={architecture}
   region={region}
   failure={failure}
-  failoverEnabled={failoverEnabled}
+  failoverEnabled={true}
 />
 
       <p className="disclaimer">
